@@ -1,2 +1,5 @@
 int
-trapRainWater(int** H, int m, int n);
+impl(int** H, int m, int n);
+
+int
+trapRainWater(int** H, int m, int* n);
