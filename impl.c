@@ -23,7 +23,6 @@
 static
 int impl(int** H, int m, int n)
 {
-
     // Constraints like...
     //     H[i][j] + w[i][j] <= H[i+1][j] + w[i+1][j]
     // ...are rearranged into...
@@ -32,12 +31,16 @@ int impl(int** H, int m, int n)
     //     H[i][j] - H[i][j+1] <= w[i][j+1] - w[i][j]
     //     H[i][j] - H[i][j-1] <= w[i][j-1] - w[i][j]
     // ...so a single-pass on the H matrix finds left hand sides.
+    //
     // During that pass, compute offsets to right hand side data.
+    //
+    // Afterwards, compute an upper bound on the possible water W.
     int* Ldat = calloc(4 * m * n, sizeof(int));
     ptrdiff_t* Rpos  = calloc(4 * m * n, sizeof(ptrdiff_t));
     ptrdiff_t* Rneg  = calloc(4 * m * n, sizeof(ptrdiff_t));
-    int hmax = 0;
+    int* W = calloc(m * n, sizeof(int));
     {
+        int hmax = 0;
         int off = 0;
         for (int i = 1; i < m-1; ++i) {
             for (int j = 1; j < n-1; ++j) {
@@ -63,6 +66,13 @@ int impl(int** H, int m, int n)
 
                 // Observed the maximum height
                 if (H[i][j] > hmax) hmax = H[i][j];
+            }
+        }
+
+        // The maximum water in any location is no more than maximum height
+        for (int i = 1; i < m-1; ++i) {
+            for (int j = 1; j < n-1; ++j) {
+                W[i*m + j] = hmax - H[i][j];
             }
         }
     }
