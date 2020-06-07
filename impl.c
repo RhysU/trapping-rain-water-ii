@@ -93,9 +93,9 @@ impl(int** H, int m, int n)
     for (int i = hmax; i --> 0;) {
         for (int j = 0; j < m * n; ++j) {
             for (int k = 0; k < 4; ++k) {
-                if (Ldat[4*j+k] > W[Rpos[j]] - W[j]) {  // Violated?
-                    W[j] = W[j] > 0 ? --W[j] : 0;       // Yes, drain.
-                    break;                              // Next square.
+                if (Ldat[4*j+k] > W[Rpos[4*j+k]] - W[j]) {  // Violated?
+                    W[j] = W[j] > 0 ? --W[j] : 0;           // Yes, drain.
+                    break;                                  // Next square.
                 }
             }
         }
