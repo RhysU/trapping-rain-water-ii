@@ -25,7 +25,7 @@ static
 int
 impl(int** H, int m, int n)
 {
-    // Left hand side data, as computed below
+    // Left hand side data for constraints, as computed below
     int* Ldat = calloc(4 * m * n, sizeof(int));
 
     // Index of positive contribution to constraints.
@@ -34,8 +34,16 @@ impl(int** H, int m, int n)
     // Unknown water height
     int* W = calloc(m * n, sizeof(int));
 
-    // Tracks maximum height
+    // Observe the maximum height on the perimeter excluding corners
     int hmax = 0;
+    for (int i = 1; i < m-1; ++i) {
+        if (H[i][0  ] > hmax) hmax = H[i][0  ];
+        if (H[i][n-1] > hmax) hmax = H[i][n-1];
+    }
+    for (int j = 1; j < n-1; ++j) {
+        if (H[0  ][j] > hmax) hmax = H[0  ][j];
+        if (H[m-1][j] > hmax) hmax = H[m-1][j];
+    }
 
     // Constraints like...
     //     H[i][j] + w[i][j] <= H[i+1][j] + w[i+1][j]
@@ -66,7 +74,7 @@ impl(int** H, int m, int n)
                 Ldat[off  ] = H[i][j] - H[i][j-1];
                 Rpos[off++] = (i)*m + (j-1);
 
-                // Observed the maximum height
+                // Observed the maximum height on the interior
                 if (H[i][j] > hmax) hmax = H[i][j];
             }
         }
