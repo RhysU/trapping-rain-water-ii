@@ -86,15 +86,17 @@ impl(int** H, int m, int n)
         }
     }
 
-    // Now, drain away water whenever constraints are not satisfied.
-    // Indices i, j, k take on new meanings below versus that from above.
-    for (int i = hmax; i --> 0;) {
-        for (int j = 0; j < m * n; ++j) {
-            if (W[j]) {                                         // Water left?
-                for (int k = 0; k < 4; ++k) {
-                    if (Ldat[4*j+k] > W[Rpos[4*j+k]] - W[j]) {  // Runs off?
-                        --W[j];                                 // Yes, drain.
-                        break;                                  // Next point.
+    // Now, drain away water from interior when constraints not satisfied.
+    for (int h = hmax; h --> 0;) {
+        for (int i = 1; i < m-1; ++i) {
+            for (int j = 1; j < n-1; ++j) {
+                const int off = i*m + j;
+                if (W[off]) {                                      // Water?
+                    for (int k = 4 * off; k < 4 * off + 4; ++k) {
+                        if (Ldat[k] > W[Rpos[k]] - W[off]) {       // Runs?
+                            --W[off];                              // Drain!
+                            break;                                 // Next.
+                        }
                     }
                 }
             }
