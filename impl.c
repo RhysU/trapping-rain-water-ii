@@ -54,34 +54,34 @@ impl(int** H, int m, int n)
     // During that pass, compute offsets to right hand side data.
     //
     // This processing completes all ingest of incoming data.
-    {
-        int off = 0;
-        for (int i = 1; i < m-1; ++i) {
-            for (int j = 1; j < n-1; ++j) {
-                // H[i][j] - H[i+1][j] <= w[i+1][j] - w[i][j]
-                Ldat[off  ] = H[i][j] - H[i+1][j];
-                Rpos[off++] = (i+1)*m + (j);
+    for (int i = 1; i < m-1; ++i) {
+        for (int j = 1; j < n-1; ++j) {
+            // Observe the maximum height on the interior
+            if (H[i][j] > hmax) hmax = H[i][j];
 
-                // H[i][j] - H[i-1][j] <= w[i-1][j] - w[i][j]
-                Ldat[off  ] = H[i][j] - H[i-1][j];
-                Rpos[off++] = (i-1)*m + (j);
+            // Compute offset to the first of 4 constraints for (i, j)
+            int off = 4*(i*m + j);
 
-                // H[i][j] - H[i][j+1] <= w[i][j+1] - w[i][j]
-                Ldat[off  ] = H[i][j] - H[i][j+1];
-                Rpos[off++] = (i)*m + (j+1);
+            // H[i][j] - H[i+1][j] <= w[i+1][j] - w[i][j]
+            Ldat[off+0] = H[i][j] - H[i+1][j];
+            Rpos[off+0] = (i+1)*m + (j);
 
-                // H[i][j] - H[i][j-1] <= w[i][j-1] - w[i][j]
-                Ldat[off  ] = H[i][j] - H[i][j-1];
-                Rpos[off++] = (i)*m + (j-1);
+            // H[i][j] - H[i-1][j] <= w[i-1][j] - w[i][j]
+            Ldat[off+1] = H[i][j] - H[i-1][j];
+            Rpos[off+1] = (i-1)*m + (j);
 
-                // Observed the maximum height on the interior
-                if (H[i][j] > hmax) hmax = H[i][j];
-            }
+            // H[i][j] - H[i][j+1] <= w[i][j+1] - w[i][j]
+            Ldat[off+2] = H[i][j] - H[i][j+1];
+            Rpos[off+2] = (i)*m + (j+1);
+
+            // H[i][j] - H[i][j-1] <= w[i][j-1] - w[i][j]
+            Ldat[off+3] = H[i][j] - H[i][j-1];
+            Rpos[off+3] = (i)*m + (j-1);
         }
-
     }
 
-    // Initialize water height to the overall maximum elevation
+    // Initialize water height to the overall maximum elevation.
+    // That is, assume some deluge instantly fills the interior.
     for (int i = 1; i < m-1; ++i) {
         for (int j = 1; j < n-1; ++j) {
             W[i*m + j] = hmax - H[i][j];
@@ -92,10 +92,12 @@ impl(int** H, int m, int n)
     // Indices i, j, k take on new meanings below versus that from above.
     for (int i = hmax; i --> 0;) {
         for (int j = 0; j < m * n; ++j) {
-            for (int k = 0; k < 4; ++k) {
-                if (Ldat[4*j+k] > W[Rpos[4*j+k]] - W[j]) {  // Violated?
-                    W[j] = W[j] > 0 ? --W[j] : 0;           // Yes, drain.
-                    break;                                  // Next square.
+            if (W[j]) {                                         // Water left?
+                for (int k = 0; k < 4; ++k) {
+                    if (Ldat[4*j+k] > W[Rpos[4*j+k]] - W[j]) {  // Runs off?
+                        --W[j];                                 // Yes, drain.
+                        break;                                  // Next point.
+                    }
                 }
             }
         }
