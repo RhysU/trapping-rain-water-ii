@@ -25,12 +25,6 @@ static
 int
 impl(int** H, int m, int n)
 {
-    // Left hand side data for constraints, as computed below
-    int* Ldat = calloc(4 * m * n, sizeof(int));
-
-    // Index of positive contribution to constraints.
-    ptrdiff_t* Rpos  = calloc(4 * m * n, sizeof(ptrdiff_t));
-
     // Observe the maximum height on the perimeter excluding corners
     int hmax = 0;
     for (int i = 1; i < m-1; ++i) {
@@ -41,6 +35,12 @@ impl(int** H, int m, int n)
         if (H[0  ][j] > hmax) hmax = H[0  ][j];
         if (H[m-1][j] > hmax) hmax = H[m-1][j];
     }
+
+    // Left hand side data for constraints, as computed below.
+    int* Ldat = calloc(4 * m * n, sizeof(int));
+
+    // Index of positive contribution to constraints, as computed below.
+    ptrdiff_t* Rpos  = calloc(4 * m * n, sizeof(ptrdiff_t));
 
     // Constraints like...
     //     H[i][j] + w[i][j] <= H[i+1][j] + w[i+1][j]
