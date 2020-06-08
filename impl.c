@@ -31,9 +31,6 @@ impl(int** H, int m, int n)
     // Index of positive contribution to constraints.
     ptrdiff_t* Rpos  = calloc(4 * m * n, sizeof(ptrdiff_t));
 
-    // Unknown water height
-    int* W = calloc(m * n, sizeof(int));
-
     // Observe the maximum height on the perimeter excluding corners
     int hmax = 0;
     for (int i = 1; i < m-1; ++i) {
@@ -82,6 +79,7 @@ impl(int** H, int m, int n)
 
     // Initialize water height to the overall maximum elevation.
     // That is, assume some deluge instantly fills the interior.
+    int* W = calloc(m * n, sizeof(int));
     for (int i = 1; i < m-1; ++i) {
         for (int j = 1; j < n-1; ++j) {
             W[i*m + j] = hmax - H[i][j];
