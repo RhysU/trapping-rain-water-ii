@@ -6,11 +6,11 @@
 //
 //  maximize sum(W[i][j])
 //  subject to
-//     H[i][j] + w[i][j] <= H[i+1][j] + w[i+1][j]
-//     H[i][j] + w[i][j] <= H[i-1][j] + w[i-1][j]
-//     H[i][j] + w[i][j] <= H[i][j+1] + w[i][j+1]
-//     H[i][j] + w[i][j] <= H[i][j-1] + w[i][j-1]
-//               w[i][j] >= 0
+//     H[i][j] + W[i][j] <= H[i+1][j] + W[i+1][j]
+//     H[i][j] + W[i][j] <= H[i-1][j] + W[i-1][j]
+//     H[i][j] + W[i][j] <= H[i][j+1] + W[i][j+1]
+//     H[i][j] + W[i][j] <= H[i][j-1] + W[i][j-1]
+//               W[i][j] >= 0
 //  \forall i \in 1 .. (m-1)
 //  \forall j \in 1 .. (n-1)
 //
@@ -25,64 +25,56 @@ static
 int
 impl(int** H, int m, int n)
 {
-    // Observe the maximum height on the perimeter excluding corners
-    int hmax = 0;
-    for (int i = 1; i < m-1; ++i) {
-        if (H[i][0  ] > hmax) hmax = H[i][0  ];
-        if (H[i][n-1] > hmax) hmax = H[i][n-1];
-    }
-    for (int j = 1; j < n-1; ++j) {
-        if (H[0  ][j] > hmax) hmax = H[0  ][j];
-        if (H[m-1][j] > hmax) hmax = H[m-1][j];
-    }
+    // Stores left hand side data for constraints.
+    int * const Ldat = calloc(4 * m * n, sizeof(int));
 
-    // Left hand side data for constraints, as computed below.
-    int* Ldat = calloc(4 * m * n, sizeof(int));
-
-    // Index of positive contribution to constraints, as computed below.
-    ptrdiff_t* Rpos  = calloc(4 * m * n, sizeof(ptrdiff_t));
+    // Stores index of positive constraint contributions.
+    ptrdiff_t * const Rpos = calloc(4 * m * n, sizeof(ptrdiff_t));
 
     // Constraints like...
-    //     H[i][j] + w[i][j] <= H[i+1][j] + w[i+1][j]
+    //     H[i][j] + w[i][j] <= H[i+1][j] + W[i+1][j]
     // ...are rearranged into...
-    //     H[i][j] - H[i+1][j] <= w[i+1][j] - w[i][j]
-    // ...so a single-pass on the H matrix finds left hand sides.
+    //     H[i][j] - H[i+1][j] <= w[i+1][j] - W[i][j]
+    // ...so a interior pass on the H matrix finds left hand sides.
     //
-    // During that pass, compute offsets to right hand side data.
-    //
-    // This processing completes all ingest of incoming data.
+    // During that pass, compute offsets to right hand side data in W[i][j].
     for (int i = 1; i < m-1; ++i) {
         for (int j = 1; j < n-1; ++j) {
-            // Observe the maximum height on the interior
-            if (H[i][j] > hmax) hmax = H[i][j];
-
-            // Compute offset to the first of 4 constraints for (i, j)
-            int off = 4*(i*m + j);
+            // Offset to the 4 constraints corresponding to (i, j)
+            const int off = 4 * (i*n + j);
 
             // H[i][j] - H[i+1][j] <= w[i+1][j] - w[i][j]
             Ldat[off+0] = H[i][j] - H[i+1][j];
-            Rpos[off+0] = (i+1)*m + (j);
+            Rpos[off+0] = (i+1)*n + (j);
 
             // H[i][j] - H[i-1][j] <= w[i-1][j] - w[i][j]
             Ldat[off+1] = H[i][j] - H[i-1][j];
-            Rpos[off+1] = (i-1)*m + (j);
+            Rpos[off+1] = (i-1)*n + (j);
 
             // H[i][j] - H[i][j+1] <= w[i][j+1] - w[i][j]
             Ldat[off+2] = H[i][j] - H[i][j+1];
-            Rpos[off+2] = (i)*m + (j+1);
+            Rpos[off+2] = (i)*n + (j+1);
 
             // H[i][j] - H[i][j-1] <= w[i][j-1] - w[i][j]
             Ldat[off+3] = H[i][j] - H[i][j-1];
-            Rpos[off+3] = (i)*m + (j-1);
+            Rpos[off+3] = (i)*n + (j-1);
+        }
+    }
+
+    // Observe the maximum height over the full grid.
+    int hmax = 0;
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            if (H[i][j] > hmax) hmax = H[i][j];
         }
     }
 
     // Initialize water height to the overall maximum elevation.
     // That is, assume some deluge instantly fills the interior.
-    int* W = calloc(m * n, sizeof(int));
+    int * const W = calloc(m * n, sizeof(int));
     for (int i = 1; i < m-1; ++i) {
         for (int j = 1; j < n-1; ++j) {
-            W[i*m + j] = hmax - H[i][j];
+            W[i*n + j] = hmax - H[i][j];
         }
     }
 
@@ -90,7 +82,7 @@ impl(int** H, int m, int n)
     for (int h = hmax; h --> 0;) {
         for (int i = 1; i < m-1; ++i) {
             for (int j = 1; j < n-1; ++j) {
-                const int off = i*m + j;
+                const int off = i*n + j;
                 if (W[off]) {                                      // Water?
                     for (int k = 4 * off; k < 4 * off + 4; ++k) {
                         if (Ldat[k] > W[Rpos[k]] - W[off]) {       // Runs?
