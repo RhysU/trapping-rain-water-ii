@@ -61,11 +61,13 @@ impl(int** H, int m, int n)
         }
     }
 
-    // Observe the maximum height over the full grid.
-    int hmax = 0;
+    // Observe the maximum/minimum height over the full grid.
+    int hmax = H[0][0];
+    int hmin = H[0][0];
     for (int i = 0; i < m; ++i) {
         for (int j = 0; j < n; ++j) {
             if (H[i][j] > hmax) hmax = H[i][j];
+            if (H[i][j] < hmin) hmin = H[i][j];
         }
     }
 
@@ -79,7 +81,8 @@ impl(int** H, int m, int n)
     }
 
     // Now, drain away water from interior when constraints not satisfied.
-    for (int h = hmax; h --> 0;) {
+    // Uses hmax+1 instead of hmax-1 because that feels nicer, somehow.
+    for (int h = hmax+1; h --> hmin;) {
         for (int i = 1; i < m-1; ++i) {
             for (int j = 1; j < n-1; ++j) {
                 const int off = i*n + j;
